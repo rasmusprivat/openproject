@@ -21,7 +21,7 @@ class Issues::ReportsController < ApplicationController
     @versions = @project.shared_versions.sort
     @priorities = IssuePriority.all
     @categories = @project.issue_categories
-    @assignees = @project.members.collect { |m| m.user }.sort
+    @assignees = (Setting.issue_group_assignment? ? @project.principals : @project.members.collect { |m| m.user }).sort
     @authors = @project.members.collect { |m| m.user }.sort
     @subprojects = @project.descendants.visible
 
@@ -58,7 +58,7 @@ class Issues::ReportsController < ApplicationController
       @report_title = l(:field_category)
     when "assigned_to"
       @field = "assigned_to_id"
-      @rows = @project.members.collect { |m| m.user }.sort
+      @rows = (Setting.issue_group_assignment? ? @project.principals : @project.members.collect { |m| m.user }).sort
       @data = Issue.by_assigned_to(@project)
       @report_title = l(:field_assigned_to)
     when "author"
