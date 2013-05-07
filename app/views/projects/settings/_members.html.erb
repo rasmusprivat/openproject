@@ -16,7 +16,7 @@
 
 <div class="splitcontentleft">
 <% if @members.any? %>
-  <% authorized = authorize_for('members', 'edit') %>
+  <% authorized = authorize_for('members', 'update') %>
 <table class="list members">
 	<thead><tr>
 	  <th><%= l(:label_user) %> / <%= l(:label_group) %></th>
@@ -32,7 +32,10 @@
   <td class="roles">
     <span id="member-<%= member.id %>-roles"><%=h member.roles.sort.collect(&:to_s).join(', ') %></span>
     <% if authorized %>
-      <%= form_for(member, :url => {:controller => '/members', :action => 'edit', :id => member, :page => params[:page]},
+      <%= form_for(member, :url => {:controller => '/members',
+                                    :action => 'update',
+                                    :id => member,
+                                    :page => params[:page]},
                            :method => :put,
                            :remote => true,
                            :html => { :id => "member-#{member.id}-roles-form", :class => 'hol', :style => 'display:none' }) do |f| %>
