@@ -716,7 +716,7 @@ namespace :redmine do
     end
 
     puts
-    if Redmine::DefaultData::Loader.no_data?
+    unless Redmine::DefaultData::Loader.data_already_loaded?
       puts "Redmine configuration need to be loaded before importing data."
       puts "Please, run this first:"
       puts
