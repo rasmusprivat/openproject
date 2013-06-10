@@ -29,11 +29,13 @@ class EnumerationsController < ApplicationController
   end
 
   def create
+    type = params[:enumeration].delete(:type)
     @enumeration = Enumeration.new(params[:enumeration])
-    @enumeration.type = params[:enumeration][:type]
+    @enumeration.type = type
+
     if @enumeration.save
       flash[:notice] = l(:notice_successful_create)
-      redirect_to :action => 'list', :type => @enumeration.type
+      redirect_to :action => 'index', :type => @enumeration.type
     else
       render :action => 'new'
     end
