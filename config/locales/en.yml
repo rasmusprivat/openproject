@@ -103,7 +103,7 @@ en:
         mail_notification: "Email notifications"
         new_password: "New password"
         password_confirmation: "Confirmation"
-        force_password_reset: "Enforce password reset on next login"
+        force_password_change: "Enforce password change on next login"
       user_preference:
         comments_sorting: "Display comments"
         hide_mail: "Hide my email address"

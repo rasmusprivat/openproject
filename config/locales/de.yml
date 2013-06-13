@@ -143,7 +143,7 @@ de:
         mail_notification: "Mailbenachrichtigung"
         new_password: "Neues Kennwort"
         password_confirmation: "Bestätigung"
-        force_password_reset: "Erzwinge Passwortwechsel beim nächsten Login"
+        force_password_change: "Erzwinge Passwortwechsel beim nächsten Login"
       user_preference:
         comments_sorting: "Kommentare anzeigen"
         hide_mail: "E-Mail-Adresse nicht anzeigen"
