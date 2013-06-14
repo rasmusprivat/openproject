@@ -62,22 +62,15 @@ class MyController < ApplicationController
 
   # Manage user's password
   def password
-    @user = User.current
+    @user = User.current  # required by "my" layout
+    @username = params[:username]
     unless @user.change_password_allowed?
       flash[:error] = l(:notice_can_t_change_password)
       redirect_to :action => 'account'
       return
     end
-    if request.post?
-      if @user.check_password?(params[:password])
-        @user.password, @user.password_confirmation = params[:new_password], params[:new_password_confirmation]
-        if @user.save
-          flash[:notice] = l(:notice_account_password_updated)
-          redirect_to :action => 'account'
-        end
-      else
-        flash[:error] = l(:notice_account_wrong_password)
-      end
+    if change_password(@user)
+      redirect_to :action => 'account'
     end
   end
 

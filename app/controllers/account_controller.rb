@@ -12,6 +12,7 @@
 
 class AccountController < ApplicationController
   include CustomFieldsHelper
+  include Mixins::ChangePasswordController
 
   # prevents login action to be filtered by check_if_login_required application scope filter
   skip_before_filter :check_if_login_required
@@ -120,6 +121,25 @@ class AccountController < ApplicationController
     redirect_to :action => 'login'
   end
 
+  # Render and/or process a password change form, used when the user is forced
+  # to change the password.
+  def force_password_change
+    @username = params[:username]
+    user = User.find_by_login(params[:username])
+    unless user.change_password_allowed?
+      # Password change forced, but not allowed.
+      # A JavaScript prevents activating force_password_change for external
+      # auth sources in the admin UI, so this shouldn't normally happen.
+      flash[:error] = l(:notice_can_t_change_password)
+      redirect_to :action => 'login'
+    end
+    if change_password(user)
+      password_authentication(@username, params[:new_password])
+      return unless user.nil?
+    end
+    render 'my/password'
+  end
+
   private
 
   def logout_user
@@ -134,17 +154,23 @@ class AccountController < ApplicationController
     if Setting.openid? && using_open_id?
       open_id_authenticate(params[:openid_url])
     else
-      password_authentication
+      password_authentication(params[:username], params[:password])
     end
   end
 
-  def password_authentication
-    user = User.try_to_login(params[:username], params[:password])
-
+  def password_authentication(username, password)
+    user = User.try_to_login(username, password)
     if user.nil?
-      u = User.find_by_login(params[:username])
-      if u && !u.active? && u.check_password?(params[:password])
-        inactive_account
+      u = User.find_by_login(username)
+      if u and u.check_password?(username)
+        if not u.active?
+          inactive_account
+        elsif u.force_password_change
+          redirect_to :action => 'force_password_change',
+                      :username => username
+        else
+          invalid_credentials
+        end
       else
         invalid_credentials
       end
