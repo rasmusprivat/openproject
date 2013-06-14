@@ -50,6 +50,7 @@ jQuery(document).ready(function($) {
                         page_limit: 10, // page size
                         page: page, // current page number
                         project_id: fakeInput.attr("data-projectId") // current project id
+                        id: fakeInput.attr("data-projectId") // current project id
                     };
                 },
                 results: function (data, page) {
