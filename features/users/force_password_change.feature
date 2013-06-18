@@ -16,12 +16,21 @@ Feature: Forced Password Change
     Given there is a user named "bob"
     Given the user "bob" is forced to change his password
 
-  Scenario: A user providing non valid credentials on forced password change
-    And I try to log in with user "bob"
-    When I fill out the change password form with a wrong old password
+  Scenario: A user providing invalid credentials on forced password change
+    When I try to log in with user "bob"
+    And I fill out the change password form with a wrong old password
     Then there should be a flash error message
+    # Explicitly check for generic message, a "wrong password" message might
+    # reveal whether the user exists
     And I should see "Invalid user or password"
     And there should be a "New password" field
+    And I should not see "Bob Bobbit"
+
+  Scenario: A user providing a new password failing validation
+    When I try to log in with user "bob"
+    And I fill out the change password form with a wrong password confirmation
+    Then there should be an error message
+    And I should not see "Bob Bobbit"
 
   Scenario: Setting forced password change for a user forces him to change password on next login
     Given I am already logged in as "admin"
@@ -31,6 +40,7 @@ Feature: Forced Password Change
     And I try to log in with user "bob"
     Then there should be a flash error message
     And there should be a "New password" field
+    And I should not see "Bob Bobbit"
 
   Scenario: A user is forced to change the password on the first login, but not on the second
     When I try to log in with user "bob"

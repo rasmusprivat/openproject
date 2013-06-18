@@ -12,7 +12,6 @@
 
 class AccountController < ApplicationController
   include CustomFieldsHelper
-  include Mixins::ChangePasswordController
 
   # prevents login action to be filtered by check_if_login_required application scope filter
   skip_before_filter :check_if_login_required
@@ -126,15 +125,13 @@ class AccountController < ApplicationController
   # When making changes here, also check MyController.password
   def force_password_change
     @username = params[:username]
-    @user = User.find_by_login(params[:username])
-    if @user and not @user.change_password_allowed?
-      # Password change forced, but not allowed.
-      # A JavaScript prevents activating force_password_change for external
-      # auth sources in the admin UI, so this shouldn't normally happen.
-      flash[:error] = l(:notice_can_t_change_password)
-      redirect_to :action => 'login'
-    end
     if request.post?
+      @user = User.find_by_login(params[:username])
+
+      # A JavaScript hides the force_password_change field for external
+      # auth sources in the admin UI, so this shouldn't normally happen.
+      return if fail_if_password_change_not_allowed(@user)
+
       if @user.check_password?(params[:password])
         @user.password = params[:new_password]
         @user.password_confirmation = params[:new_password_confirmation]
@@ -174,11 +171,12 @@ class AccountController < ApplicationController
   def password_authentication(username, password)
     user = User.try_to_login(username, password)
     if user.nil?
-      u = User.find_by_login(username)
-      if u and u.check_password?(password)
-        if not u.active?
+      user = User.find_by_login(username)
+      if user and user.check_password?(password)
+        if not user.active?
           inactive_account
-        elsif u.force_password_change
+        elsif user.force_password_change
+          return if fail_if_password_change_not_allowed(user)
           flash[:error] = l(:notice_account_new_password_forced)
           redirect_to :action => 'force_password_change',
                       :username => username
@@ -284,6 +282,16 @@ class AccountController < ApplicationController
   def inactive_account
     logger.warn "Failed login for '#{params[:username]}' from #{request.remote_ip} at #{Time.now.utc} (INACTIVE)"
     flash.now[:error] = l(:notice_account_inactive)
+  end
+
+  def fail_if_password_change_not_allowed(user)
+    logger.warn "Password change for user '#{user}' forced, but user is not allowed to change password"
+    if user and not user.change_password_allowed?
+      flash[:error] = l(:notice_can_t_change_password)
+      redirect_to :action => 'login'
+      return true
+    end
+    false
   end
 
   # Register a user for email activation.
