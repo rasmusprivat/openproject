@@ -123,19 +123,32 @@ class AccountController < ApplicationController
 
   # Render and/or process a password change form, used when the user is forced
   # to change the password.
+  # When making changes here, also check MyController.password
   def force_password_change
     @username = params[:username]
-    user = User.find_by_login(params[:username])
-    unless user.change_password_allowed?
+    @user = User.find_by_login(params[:username])
+    if @user and not @user.change_password_allowed?
       # Password change forced, but not allowed.
       # A JavaScript prevents activating force_password_change for external
       # auth sources in the admin UI, so this shouldn't normally happen.
       flash[:error] = l(:notice_can_t_change_password)
       redirect_to :action => 'login'
     end
-    if change_password(user)
-      password_authentication(@username, params[:new_password])
-      return unless user.nil?
+    if request.post?
+      if @user.check_password?(params[:password])
+        @user.password = params[:new_password]
+        @user.password_confirmation = params[:new_password_confirmation]
+        @user.force_password_change = false
+        if @user.save
+          result = password_authentication(@username, params[:new_password])
+          # password_authentication resets session including flash notices,
+          # so set afterwards.
+          flash[:notice] = l(:notice_account_password_updated)
+          return result
+        end
+      else
+        invalid_credentials
+      end
     end
     render 'my/password'
   end
@@ -162,10 +175,11 @@ class AccountController < ApplicationController
     user = User.try_to_login(username, password)
     if user.nil?
       u = User.find_by_login(username)
-      if u and u.check_password?(username)
+      if u and u.check_password?(password)
         if not u.active?
           inactive_account
         elsif u.force_password_change
+          flash[:error] = l(:notice_account_new_password_forced)
           redirect_to :action => 'force_password_change',
                       :username => username
         else
