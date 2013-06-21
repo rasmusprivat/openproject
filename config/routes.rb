@@ -13,8 +13,12 @@
 OpenProject::Application.routes.draw do
   root :to => 'welcome#index', :as => 'home'
 
-  match '/login'  => 'account#login',  :as => 'signin'
-  match '/logout' => 'account#logout', :as => 'signout'
+  scope :controller => 'account' do
+    get '/account/force_password_change', :action => 'force_password_change'
+    post '/account/change_password', :action => 'change_password'
+    match '/login', :action => 'login',  :as => 'signin', :via => [:get, :post]
+    get '/logout', :action => 'logout', :as => 'signout'
+  end
 
   match '/roles/workflow/:id/:role_id/:tracker_id' => 'roles#workflow'
   match '/help/:ctrl/:page' => 'help#index'
@@ -346,6 +350,11 @@ OpenProject::Application.routes.draw do
   # alternate routes for the current user
   scope "my" do
     match '/deletion_info' => 'users#deletion_info', :via => :get, :as => 'delete_my_account_info'
+  end
+
+  scope :controller => 'my' do
+    get '/my/password', :action => 'password'
+    post '/my/change_password', :action => 'change_password'
   end
 
   namespace :timelines do

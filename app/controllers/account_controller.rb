@@ -122,30 +122,33 @@ class AccountController < ApplicationController
 
   # Render and/or process a password change form, used when the user is forced
   # to change the password.
-  # When making changes here, also check MyController.password
+  # When making changes here, also check MyController.change_password
   def force_password_change
     @username = params[:username]
-    if request.post?
-      @user = User.find_by_login(params[:username])
+    render 'my/password'
+  end
 
-      # A JavaScript hides the force_password_change field for external
-      # auth sources in the admin UI, so this shouldn't normally happen.
-      return if fail_if_password_change_not_allowed(@user)
+  def change_password
+    @user = User.find_by_login(params[:username])
 
-      if @user.check_password?(params[:password])
-        @user.password = params[:new_password]
-        @user.password_confirmation = params[:new_password_confirmation]
-        @user.force_password_change = false
-        if @user.save
-          result = password_authentication(@username, params[:new_password])
-          # password_authentication resets session including flash notices,
-          # so set afterwards.
-          flash[:notice] = l(:notice_account_password_updated)
-          return result
-        end
-      else
-        invalid_credentials
+    # A JavaScript hides the force_password_change field for external
+    # auth sources in the admin UI, so this shouldn't normally happen.
+    return if redirect_if_password_change_not_allowed(@user)
+
+    if @user.check_password?(params[:password])
+      @user.password = params[:new_password]
+      @user.password_confirmation = params[:new_password_confirmation]
+      @user.force_password_change = false
+      if @user.save
+
+        result = password_authentication(params[:username], params[:new_password])
+        # password_authentication resets session including flash notices,
+        # so set afterwards.
+        flash[:notice] = l(:notice_account_password_updated)
+        return result
       end
+    else
+      invalid_credentials
     end
     render 'my/password'
   end
@@ -176,7 +179,7 @@ class AccountController < ApplicationController
         if not user.active?
           inactive_account
         elsif user.force_password_change
-          return if fail_if_password_change_not_allowed(user)
+          return if redirect_if_password_change_not_allowed(user)
           flash[:error] = l(:notice_account_new_password_forced)
           redirect_to :action => 'force_password_change',
                       :username => username
@@ -284,7 +287,7 @@ class AccountController < ApplicationController
     flash.now[:error] = l(:notice_account_inactive)
   end
 
-  def fail_if_password_change_not_allowed(user)
+  def redirect_if_password_change_not_allowed(user)
     logger.warn "Password change for user '#{user}' forced, but user is not allowed to change password"
     if user and not user.change_password_allowed?
       flash[:error] = l(:notice_can_t_change_password)
